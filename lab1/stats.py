@@ -23,3 +23,13 @@ def mode(numbers):
     max_count = max(freq.values())
     modes = [num for num, count in freq.items() if count == max_count]
     return min(modes)
+
+if __name__ == "__main__":
+    try:
+        user_input = input("Enter numbers separated by spaces: ")
+        numbers = [float(x) for x in user_input.strip().split()]
+        print(f"Mean: {mean(numbers)}")
+        print(f"Median: {median(numbers)}")
+        print(f"Mode: {mode(numbers)}")
+    except ValueError as e:
+        print(f"Error: {e}")
