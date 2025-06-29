@@ -1,0 +1,10 @@
+boy
+girl
+dog
+town
+car
+cat
+teacher
+computer
+apple
+book
