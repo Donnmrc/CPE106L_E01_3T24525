@@ -8,3 +8,6 @@ teacher
 computer
 apple
 book
+robot
+mountain
+river
