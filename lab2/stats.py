@@ -26,7 +26,10 @@ def mode(numbers):
             return num
 
 def main():
+<<<<<<< HEAD
     # Built-in test list
+=======
+>>>>>>> bad5cc0ba42d80840ffc53787e22b1d9eacd4fc1
     test_list = [1, 2, 2, 3, 4]
     print("Test List:", test_list)
     print("Mean:", mean(test_list))
@@ -34,7 +37,10 @@ def main():
     print("Mode:", mode(test_list))
 
     print("\n--- User Input ---")
+<<<<<<< HEAD
     # User input
+=======
+>>>>>>> bad5cc0ba42d80840ffc53787e22b1d9eacd4fc1
     user_input = input("Enter a list of numbers separated by spaces: ")
     user_list = list(map(int, user_input.split()))
     print("User List:", user_list)
@@ -42,5 +48,9 @@ def main():
     print("Median:", median(user_list))
     print("Mode:", mode(user_list))
 
+<<<<<<< HEAD
 if _name_ == "_main_":
+=======
+if __name__ == "__main__":
+>>>>>>> bad5cc0ba42d80840ffc53787e22b1d9eacd4fc1
     main()
