@@ -1,16 +1,8 @@
-class SavingsAccount:
-    def __init__(self, name, balance):
-        self.name = name
-        self.balance = balance
-
-    def __lt__(self, other):
-        return self.name < other.name
-
-    def __str__(self):
-        return f"{self.name}: ${self.balance:.2f}"
-
+from savingsaccount import SavingsAccount
 
 class Bank:
+    """A simple bank holding multiple savings accounts."""
+
     def __init__(self):
         self.accounts = []
 
@@ -18,23 +10,36 @@ class Bank:
         self.accounts.append(account)
 
     def __str__(self):
-        sorted_accounts = sorted(self.accounts)  # Sorts using __lt__ from SavingsAccount
-        return "\n".join(str(account) for account in sorted_accounts)
+        # Sort accounts by name using __lt__ in SavingsAccount
+        sorted_accounts = sorted(self.accounts)
+        return "\n\n".join(str(account) for account in sorted_accounts)
 
 
 def main():
+    # Sample accounts, we added our names too
+    acc1 = SavingsAccount("Charlie", "1234", 1000.00)
+    acc2 = SavingsAccount("Alice", "5678", 2500.00)
+    acc3 = SavingsAccount("Bob", "4321", 1500.00)
+    acc4 = SavingsAccount("Andrew", "6000", 23.00)
+    acc5 = SavingsAccount("Donn", "9999", 3000.00)
+
+    # Create a bank and add accounts
     bank = Bank()
+    bank.addAccount(acc1)
+    bank.addAccount(acc2)
+    bank.addAccount(acc3)
+    bank.addAccount(acc4)
+    bank.addAccount(acc5)
 
-    # Adding accounts to the bank, adding our names as well
-    bank.addAccount(SavingsAccount("Charlie", 2500))
-    bank.addAccount(SavingsAccount("Alice", 1500))
-    bank.addAccount(SavingsAccount("Bob", 2000))
-    bank.addAccount(SavingsAccount("Donn", 3000))
-    bank.addAccount(SavingsAccount("Andrew", 23))
-
-    print("Accounts sorted by name:")
+    # Display sorted accounts
+    print("Accounts sorted by name:\n")
     print(bank)
 
 
 if __name__ == "__main__":
     main()
+
+
+if __name__ == "__main__":
+    main()
+
