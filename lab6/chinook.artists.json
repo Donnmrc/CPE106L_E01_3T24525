@@ -1,0 +1,35 @@
+[{
+  "_id": {
+    "$oid": "686a5a470715bb9c4c593835"
+  },
+  "ArtistId": 1,
+  "Name": "AC/DC"
+},
+{
+  "_id": {
+    "$oid": "686a5a4f0715bb9c4c593837"
+  },
+  "ArtistId": 2,
+  "Name": "Aerosmith"
+},
+{
+  "_id": {
+    "$oid": "686a5a840715bb9c4c593839"
+  },
+  "ArtistId": 3,
+  "Name": "Travis Scott"
+},
+{
+  "_id": {
+    "$oid": "686a5a8d0715bb9c4c59383b"
+  },
+  "ArtistId": 4,
+  "Name": "IV of Spades"
+},
+{
+  "_id": {
+    "$oid": "686a5a960715bb9c4c59383d"
+  },
+  "ArtistId": 5,
+  "Name": "Phoebe Bridgers"
+}]
