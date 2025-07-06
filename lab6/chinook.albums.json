@@ -1,0 +1,56 @@
+[{
+  "_id": {
+    "$oid": "686a5b030715bb9c4c593842"
+  },
+  "AlbumId": 1,
+  "Title": "Back in Black",
+  "ArtistId": 1
+},
+{
+  "_id": {
+    "$oid": "686a5b080715bb9c4c593844"
+  },
+  "AlbumId": 2,
+  "Title": "Highway to Hell",
+  "ArtistId": 1
+},
+{
+  "_id": {
+    "$oid": "686a5b120715bb9c4c593846"
+  },
+  "AlbumId": 3,
+  "Title": "Big Ones",
+  "ArtistId": 2
+},
+{
+  "_id": {
+    "$oid": "686a5b180715bb9c4c593848"
+  },
+  "AlbumId": 4,
+  "Title": "Get a Grip",
+  "ArtistId": 2
+},
+{
+  "_id": {
+    "$oid": "686a5b1e0715bb9c4c59384a"
+  },
+  "AlbumId": 5,
+  "Title": "ASTROWORLD",
+  "ArtistId": 3
+},
+{
+  "_id": {
+    "$oid": "686a5b440715bb9c4c59384c"
+  },
+  "AlbumId": 6,
+  "Title": "CLAPCLAPCLAP!",
+  "ArtistId": 4
+},
+{
+  "_id": {
+    "$oid": "686a5b5d0715bb9c4c59384e"
+  },
+  "AlbumId": 7,
+  "Title": "Punisher",
+  "ArtistId": 5
+}]
