@@ -1,16 +1,12 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from datetime import datetime
 import sqlite3
 import bcrypt
 from pathlib import Path
 
-# Database path
 DB_PATH = Path(__file__).parent / "MindfulBalance.db"
-
 app = FastAPI()
-
-# -------------------- Models --------------------
 
 class RegisterRequest(BaseModel):
     username: str
@@ -24,8 +20,6 @@ class MoodRequest(BaseModel):
 class JournalRequest(BaseModel):
     username: str
     content: str
-
-# -------------------- Helpers --------------------
 
 def get_connection():
     return sqlite3.connect(DB_PATH)
@@ -46,8 +40,6 @@ def get_user_id(username: str) -> int:
         return result[0]
     raise HTTPException(status_code=404, detail="User not found")
 
-# -------------------- Routes --------------------
-
 @app.on_event("startup")
 def startup():
     from backend.database import initialize_database
@@ -66,6 +58,19 @@ def register_user(req: RegisterRequest):
         raise HTTPException(status_code=400, detail="Username already exists")
     finally:
         conn.close()
+
+@app.post("/login")
+def login_user(req: RegisterRequest):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT password_hash FROM users WHERE username = ?", (req.username,))
+    result = cursor.fetchone()
+    conn.close()
+
+    if result and verify_password(req.password, result[0]):
+        return {"message": "Login successful"}
+    else:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
 @app.post("/mood")
 def log_mood(req: MoodRequest):

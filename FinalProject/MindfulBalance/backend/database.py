@@ -1,7 +1,6 @@
 import sqlite3
 from pathlib import Path
 
-# Path to the database file
 DB_PATH = Path(__file__).parent / "MindfulBalance.db"
 
 def get_connection():
@@ -11,7 +10,6 @@ def initialize_database():
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Create Users table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +18,6 @@ def initialize_database():
     )
     """)
 
-    # Create Mood Entries table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS mood_entries (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,7 +29,6 @@ def initialize_database():
     )
     """)
 
-    # Create Journal Entries table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS journal_entries (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,7 +39,6 @@ def initialize_database():
     )
     """)
 
-    # Create Recommendations table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS recommendations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
