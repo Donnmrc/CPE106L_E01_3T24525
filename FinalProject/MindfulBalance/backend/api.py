@@ -4,9 +4,32 @@ from datetime import datetime
 import sqlite3
 import bcrypt
 from pathlib import Path
+import random
+import httpx
 
 DB_PATH = Path(__file__).parent / "MindfulBalance.db"
 app = FastAPI()
+
+TIPS = [
+    "Take a deep breath. You’ve survived 100% of your worst days.",
+    "Write down 3 things you're grateful for.",
+    "Go for a short walk to refresh your mind.",
+    "Disconnect for 30 minutes and do something offline.",
+    "Talk to a friend or loved one today.",
+]
+@app.get("/resources")
+def get_tip():
+    try:
+        response = httpx.get("https://zenquotes.io/api/random", timeout=5)
+        data = response.json()
+        quote = data[0]["q"] + " — " + data[0]["a"]
+        return {"tip": quote}
+    except Exception:
+        return {"tip": random.choice(TIPS)}
+
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
 
 class RegisterRequest(BaseModel):
     username: str
