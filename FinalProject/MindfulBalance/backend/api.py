@@ -11,12 +11,13 @@ DB_PATH = Path(__file__).parent / "MindfulBalance.db"
 app = FastAPI()
 
 TIPS = [
-    "Take a deep breath. You’ve survived 100% of your worst days.",
+    "Take a deep breath. You've survived 100% of your worst days.",
     "Write down 3 things you're grateful for.",
     "Go for a short walk to refresh your mind.",
     "Disconnect for 30 minutes and do something offline.",
     "Talk to a friend or loved one today.",
 ]
+
 @app.get("/resources")
 def get_tip():
     try:
@@ -31,7 +32,7 @@ class RegisterRequest(BaseModel):
     username: str
     password: str
 
-class RegisterRequest(BaseModel):
+class LoginRequest(BaseModel):  # Fixed: Renamed from duplicate RegisterRequest
     username: str
     password: str
 
@@ -65,7 +66,7 @@ def get_user_id(username: str) -> int:
 
 @app.on_event("startup")
 def startup():
-    from backend.database import initialize_database
+    from database import initialize_database  # Fixed: Removed backend. prefix
     initialize_database()
 
 @app.post("/register")
@@ -83,7 +84,7 @@ def register_user(req: RegisterRequest):
         conn.close()
 
 @app.post("/login")
-def login_user(req: RegisterRequest):
+def login_user(req: LoginRequest):  # Fixed: Use LoginRequest instead of RegisterRequest
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT password_hash FROM users WHERE username = ?", (req.username,))
