@@ -1,6 +1,7 @@
+# api.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
 import sqlite3
 import bcrypt
 from pathlib import Path
@@ -11,7 +12,7 @@ DB_PATH = Path(__file__).parent / "MindfulBalance.db"
 app = FastAPI()
 
 TIPS = [
-    "Take a deep breath. You've survived 100% of your worst days.",
+    "Take a deep breath. You’ve survived 100% of your worst days.",
     "Write down 3 things you're grateful for.",
     "Go for a short walk to refresh your mind.",
     "Disconnect for 30 minutes and do something offline.",
@@ -29,10 +30,6 @@ def get_tip():
         return {"tip": random.choice(TIPS)}
 
 class RegisterRequest(BaseModel):
-    username: str
-    password: str
-
-class LoginRequest(BaseModel):  # Fixed: Renamed from duplicate RegisterRequest
     username: str
     password: str
 
@@ -54,19 +51,19 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
-def get_user_id(username: str) -> int:
+def get_user_id(username):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
-    result = cursor.fetchone()
+    row = cursor.fetchone()
     conn.close()
-    if result:
-        return result[0]
-    raise HTTPException(status_code=404, detail="User not found")
+    if row:
+        return row[0]
+    raise Exception("User not found")
 
 @app.on_event("startup")
 def startup():
-    from database import initialize_database  # Fixed: Removed backend. prefix
+    from backend.database import initialize_database
     initialize_database()
 
 @app.post("/register")
@@ -84,7 +81,7 @@ def register_user(req: RegisterRequest):
         conn.close()
 
 @app.post("/login")
-def login_user(req: LoginRequest):  # Fixed: Use LoginRequest instead of RegisterRequest
+def login_user(req: RegisterRequest):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT password_hash FROM users WHERE username = ?", (req.username,))
@@ -102,9 +99,10 @@ def log_mood(req: MoodRequest):
     timestamp = datetime.now().isoformat()
     conn = get_connection()
     cursor = conn.cursor()
+    tags_str = ",".join(req.tags) if req.tags else ""
     cursor.execute(
         "INSERT INTO mood_entries (user_id, mood, tags, timestamp) VALUES (?, ?, ?, ?)",
-        (user_id, req.mood, ",".join(req.tags), timestamp)
+        (user_id, req.mood, tags_str, timestamp)
     )
     conn.commit()
     conn.close()
@@ -148,10 +146,82 @@ def get_stats(username: str):
     user_id = get_user_id(username)
     conn = get_connection()
     cursor = conn.cursor()
+
+    # Today's Mood
+    today = datetime.now().strftime("%Y-%m-%d")
     cursor.execute(
-        "SELECT mood, COUNT(*) FROM mood_entries WHERE user_id = ? GROUP BY mood",
+        "SELECT mood FROM mood_entries WHERE user_id = ? AND DATE(timestamp) = ? ORDER BY timestamp DESC LIMIT 1",
+        (user_id, today)
+    )
+    row = cursor.fetchone()
+    today_mood = row[0] if row else None
+
+    # Mood Streak
+    cursor.execute(
+        "SELECT DISTINCT DATE(timestamp) FROM mood_entries WHERE user_id = ? ORDER BY DATE(timestamp) DESC",
         (user_id,)
     )
-    stats = {row[0]: row[1] for row in cursor.fetchall()}
+    rows = cursor.fetchall()
+    streak = 0
+    if rows:
+        today_date = datetime.now().date()
+        for r in rows:
+            entry_date = datetime.strptime(r[0], "%Y-%m-%d").date()
+            if entry_date == today_date - timedelta(days=streak):
+                streak += 1
+            else:
+                break
+
+    # Journal Count
+    cursor.execute(
+        "SELECT COUNT(*) FROM journal_entries WHERE user_id = ?",
+        (user_id,)
+    )
+    journal_count = cursor.fetchone()[0]
+
     conn.close()
-    return {"mood_stats": stats}
+    return {
+        "today_mood": today_mood,
+        "streak": streak,
+        "journal_count": journal_count
+    }
+
+@app.get("/latest_journal")
+def latest_journal(username: str):
+    user_id = get_user_id(username)
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT content FROM journal_entries WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1",
+        (user_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return {"content": row[0]}
+    return {"content": ""}
+
+from datetime import datetime, timedelta
+
+@app.get("/streak")
+def get_streak(username: str):
+    user_id = get_user_id(username)
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT DISTINCT DATE(timestamp) FROM mood_entries WHERE user_id = ? ORDER BY DATE(timestamp) DESC",
+        (user_id,)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        return {"streak": 0}
+    streak = 0
+    today = datetime.now().date()
+    for row in rows:
+        entry_date = datetime.strptime(row[0], "%Y-%m-%d").date()
+        if entry_date == today - timedelta(days=streak):
+            streak += 1
+        else:
+            break
+    return {"streak": streak}
