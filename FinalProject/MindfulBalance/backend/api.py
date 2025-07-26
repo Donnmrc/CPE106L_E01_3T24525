@@ -192,14 +192,27 @@ def latest_journal(username: str):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT content FROM journal_entries WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1",
+        """
+        SELECT content, timestamp 
+        FROM journal_entries 
+        WHERE user_id = ? 
+        ORDER BY timestamp DESC 
+        LIMIT 1
+        """,
         (user_id,)
     )
     row = cursor.fetchone()
     conn.close()
+    
     if row:
-        return {"content": row[0]}
-    return {"content": ""}
+        return {
+            "content": row[0],
+            "timestamp": row[1]
+        }
+    return {
+        "content": "",
+        "timestamp": None
+    }
 
 from datetime import datetime, timedelta
 

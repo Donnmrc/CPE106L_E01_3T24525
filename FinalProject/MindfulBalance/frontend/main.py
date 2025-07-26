@@ -1,6 +1,7 @@
 import flet as ft
 import httpx
 from datetime import datetime
+from auth_views import login_view, register_view
 
 API_BASE = "http://127.0.0.1:8000"
 DEFAULT_USER = "test123"
@@ -38,7 +39,15 @@ def home_view(page: ft.Page):
         # Get latest journal entry
         journal_entry_response = httpx.get(f"{API_BASE}/latest_journal", params={"username": DEFAULT_USER}, timeout=5)
         if journal_entry_response.status_code == 200:
-            latest_journal = journal_entry_response.json().get("content", "")
+            journal_data = journal_entry_response.json()
+            latest_journal = journal_data.get("content", "")
+            timestamp = journal_data.get("timestamp")
+            if timestamp:
+                # Convert ISO timestamp to more readable format
+                dt = datetime.fromisoformat(timestamp)
+                formatted_time = dt.strftime("%B %d, %Y at %I:%M %p")
+            else:
+                formatted_time = None
     except:
         pass
 
@@ -140,11 +149,23 @@ def home_view(page: ft.Page):
         expand=1
     )
 
-    # Latest Journal Section
+    # Update Latest Journal Section
     latest_journal_card = ft.Container(
         content=ft.Column([
             ft.Text("Latest Journal Entry", size=16, weight=ft.FontWeight.BOLD),
-            ft.Text(latest_journal if latest_journal else "No journal entry yet.", size=14, italic=True, color=ft.Colors.GREY_700),
+            ft.Text(
+                latest_journal if latest_journal else "No journal entry yet.", 
+                size=14, 
+                italic=True, 
+                color=ft.Colors.GREY_700,
+                text_align=ft.TextAlign.JUSTIFY
+            ),
+            ft.Text(
+                formatted_time if formatted_time else "", 
+                size=12,
+                color=ft.Colors.GREY_600,
+                italic=True
+            ) if latest_journal else ft.Container(),
         ], spacing=10),
         padding=20,
         bgcolor=SECONDARY_COLOR,
@@ -353,7 +374,15 @@ def main(page: ft.Page):
     def route_change(e: ft.RouteChangeEvent):
         page.views.clear()
         
-        if page.route == "/":
+        if page.route == "/login":
+            page.views.append(login_view(page))
+        elif page.route == "/register":
+            page.views.append(register_view(page))
+        elif page.route == "/":
+            # Check if user is logged in
+            if not page.client_storage.get("username"):
+                page.go("/login")
+                return
             page.views.append(home_view(page))
         elif page.route == "/mood":
             page.views.append(mood_view(page))
