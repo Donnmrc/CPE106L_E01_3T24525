@@ -1,378 +1,371 @@
-# main.py
 import flet as ft
 import httpx
+from datetime import datetime
 
 API_BASE = "http://127.0.0.1:8000"
 DEFAULT_USER = "test123"
 
-ACCENT = ft.Colors.BLUE_100
-FONT_COLOR = ft.Colors.GREY_900
+# Color scheme
+PRIMARY_COLOR = ft.Colors.BLUE_600
+SECONDARY_COLOR = ft.Colors.BLUE_100
+BACKGROUND_COLOR = ft.Colors.GREY_50
+TEXT_COLOR = ft.Colors.GREY_900
+CARD_COLOR = ft.Colors.WHITE
 
-def dashboard_view(page):
-    # Card: Today's Mood
-    mood_text = ft.Text("Not tracked yet", size=20, weight=ft.FontWeight.BOLD, color=FONT_COLOR)
+def home_view(page: ft.Page):
+    # Fetch stats from API
+    mood_stats = {}
+    journal_count = 0
+    streak = 0
+    latest_journal = ""
+    
+    try:
+        # Get mood stats
+        response = httpx.get(f"{API_BASE}/stats", params={"username": DEFAULT_USER}, timeout=5)
+        if response.status_code == 200:
+            mood_stats = response.json().get("mood_stats", {})
+        
+        # Get journal count (would need to add this endpoint to your API)
+        journal_response = httpx.get(f"{API_BASE}/journal_count", params={"username": DEFAULT_USER}, timeout=5)
+        if journal_response.status_code == 200:
+            journal_count = journal_response.json().get("count", 0)
+            
+        # Get streak (would need to implement this in your API)
+        streak_response = httpx.get(f"{API_BASE}/streak", params={"username": DEFAULT_USER}, timeout=5)
+        if streak_response.status_code == 200:
+            streak = streak_response.json().get("streak", 0)
+        
+        # Get latest journal entry
+        journal_entry_response = httpx.get(f"{API_BASE}/latest_journal", params={"username": DEFAULT_USER}, timeout=5)
+        if journal_entry_response.status_code == 200:
+            latest_journal = journal_entry_response.json().get("content", "")
+    except:
+        pass
 
-    def load_today_mood():
-        try:
-            resp = httpx.get(f"{API_BASE}/stats", params={"username": DEFAULT_USER})
-            stats = resp.json()["mood_stats"]
-            if stats:
-                mood, count = max(stats.items(), key=lambda x: x[1])
-                mood_text.value = f"{mood.capitalize()} ({count})"
-            else:
-                mood_text.value = "Not tracked yet"
-            page.update()
-        except Exception:
-            mood_text.value = "Not tracked yet"
-            page.update()
-    load_today_mood()
+    # Today's Mood Card
+    today_mood = "Not tracked yet"
+    if mood_stats:
+        # Check if mood was logged today (simplified check)
+        today_mood = f"{sum(mood_stats.values())} tracked"
 
-    # Card: Mood Streak
-    streak_text = ft.Text("0 days", size=20, weight=ft.FontWeight.BOLD, color=FONT_COLOR)
-
-    def load_streak():
-        try:
-            resp = httpx.get(f"{API_BASE}/stats", params={"username": DEFAULT_USER})
-            stats = resp.json()["mood_stats"]
-            total = sum(stats.values())
-            streak_text.value = f"{total} days"
-            page.update()
-        except Exception:
-            streak_text.value = "0 days"
-            page.update()
-    load_streak()
-
-    # Card: Journal Entries
-    journal_count = ft.Text("0", size=20, weight=ft.FontWeight.BOLD, color=FONT_COLOR)
-
-    def load_journal_count():
-        try:
-            resp = httpx.get(f"{API_BASE}/stats", params={"username": DEFAULT_USER})
-            # For demo, count moods as journal entries (replace with journal count endpoint if available)
-            stats = resp.json()["mood_stats"]
-            journal_count.value = str(sum(stats.values()))
-            page.update()
-        except Exception:
-            journal_count.value = "0"
-            page.update()
-    load_journal_count()
-
-    # Summary cards row
-    summary_row = ft.Row([
-        ft.Container(
-            ft.Column([
-                ft.Text("Today's Mood", size=14, color=ft.Colors.GREY_700),
-                mood_text,
-                ft.Text("Track your first mood", size=12, color=ft.Colors.GREY_500),
-            ], spacing=2),
-            bgcolor=ft.Colors.WHITE,
-            border_radius=12,
-            padding=16,
-            expand=1,
-            shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.GREY_200)
+    mood_card = ft.Card(
+        content=ft.Container(
+            content=ft.Column([
+                ft.Text("Today's Mood", size=16, weight=ft.FontWeight.BOLD),
+                ft.Text(today_mood, size=24, weight=ft.FontWeight.BOLD),
+                ft.FilledButton(
+                    "Track your first mood",
+                    on_click=lambda _: page.go("/mood"),
+                    height=40
+                )
+            ], spacing=10),
+            padding=20,
+            width=180,
+            height=180
         ),
-        ft.Container(
-            ft.Column([
-                ft.Text("Mood Streak", size=14, color=ft.Colors.GREY_700),
-                streak_text,
-                ft.Text("Start your journey today", size=12, color=ft.Colors.GREY_500),
-            ], spacing=2),
-            bgcolor=ft.Colors.WHITE,
-            border_radius=12,
-            padding=16,
-            expand=1,
-            shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.GREY_200)
-        ),
-        ft.Container(
-            ft.Column([
-                ft.Text("Journal Entries", size=14, color=ft.Colors.GREY_700),
-                journal_count,
-                ft.Text("Total reflections written", size=12, color=ft.Colors.GREY_500),
-            ], spacing=2),
-            bgcolor=ft.Colors.WHITE,
-            border_radius=12,
-            padding=16,
-            expand=1,
-            shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.GREY_200)
-        ),
-    ], spacing=16)
-
-    # Quick Mood Check card
-    def show_mood_dialog(e):
-        dialog = ft.AlertDialog(
-            title=ft.Text("Mood Window"),
-            content=ft.Text("hello"),
-            actions=[
-                ft.TextButton("Close", on_click=lambda _: page.dialog.dismiss())
-            ]
-        )
-        page.dialog = dialog
-        dialog.open = True
-        page.update()
-
-    quick_mood_card = ft.Container(
-        ft.Column([
-            ft.Text("Quick Mood Check", size=16, weight=ft.FontWeight.BOLD, color=FONT_COLOR),
-            ft.Text("How are you feeling right now? Track your mood in seconds.", size=12, color=ft.Colors.GREY_600),
-            ft.ElevatedButton("Track My Mood", on_click=show_mood_dialog, bgcolor=ft.Colors.BLUE_300, color=ft.Colors.WHITE),
-        ], spacing=8),
-        bgcolor=ACCENT,
-        border_radius=12,
-        padding=16,
-        expand=1,
-        shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.BLUE_50)
+        color=CARD_COLOR,
+        elevation=2,
+        margin=5
     )
 
-    # Daily Reflection card
-    daily_reflection_card = ft.Container(
-        ft.Column([
-            ft.Text("Daily Reflection", size=16, weight=ft.FontWeight.BOLD, color=FONT_COLOR),
-            ft.Text("Take a moment to reflect on your day and thoughts.", size=12, color=ft.Colors.GREY_600),
-            ft.ElevatedButton("Write in Journal", on_click=lambda _: page.go("/journal"), bgcolor=ft.Colors.BLUE_50, color=ft.Colors.BLUE_900),
-        ], spacing=8),
-        bgcolor=ft.Colors.WHITE,
-        border_radius=12,
-        padding=16,
-        expand=1,
-        shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.GREY_100)
+    # Streak Card
+    streak_card = ft.Card(
+        content=ft.Container(
+            content=ft.Column([
+                ft.Text("Mood Streak", size=16, weight=ft.FontWeight.BOLD),
+                ft.Text(f"{streak} days", size=24, weight=ft.FontWeight.BOLD),
+                ft.Text("Start your journey today", size=12)
+            ], spacing=10),
+            padding=20,
+            width=180,
+            height=180
+        ),
+        color=CARD_COLOR,
+        elevation=2,
+        margin=5
     )
 
-    # Main dashboard layout
+    # Journal Card
+    journal_card = ft.Card(
+        content=ft.Container(
+            content=ft.Column([
+                ft.Text("Journal Entries", size=16, weight=ft.FontWeight.BOLD),
+                ft.Text(str(journal_count), size=24, weight=ft.FontWeight.BOLD),
+                ft.Text("Total reflections written", size=12)
+            ], spacing=10),
+            padding=20,
+            width=180,
+            height=180
+        ),
+        color=CARD_COLOR,
+        elevation=2,
+        margin=5
+    )
+
+    # Quick Mood Check Section
+    mood_check = ft.Container(
+        content=ft.Column([
+            ft.Text("Quick Mood Check", size=18, weight=ft.FontWeight.BOLD),
+            ft.Text("How are you feeling right now? Track your mood in seconds.", size=14),
+            ft.FilledButton(
+                "Track My Mood",
+                on_click=lambda _: page.go("/mood"),
+                width=200,
+                height=50
+            )
+        ], spacing=10),
+        padding=20,
+        bgcolor=SECONDARY_COLOR,
+        border_radius=10,
+        margin=0,  # Remove margin for side-by-side alignment
+        expand=1
+    )
+
+    # Daily Reflection Section
+    daily_reflection = ft.Container(
+        content=ft.Column([
+            ft.Text("Daily Reflection", size=18, weight=ft.FontWeight.BOLD),
+            ft.Text("Take a moment to reflect on your day and thoughts.", size=14),
+            ft.FilledButton(
+                "Write in Journal",
+                on_click=lambda _: page.go("/journal"),
+                width=200,
+                height=50
+            )
+        ], spacing=10),
+        padding=20,
+        bgcolor=SECONDARY_COLOR,
+        border_radius=10,
+        margin=0,  # Remove margin for side-by-side alignment
+        expand=1
+    )
+
+    # Latest Journal Section
+    latest_journal_card = ft.Container(
+        content=ft.Column([
+            ft.Text("Latest Journal Entry", size=16, weight=ft.FontWeight.BOLD),
+            ft.Text(latest_journal if latest_journal else "No journal entry yet.", size=14, italic=True, color=ft.Colors.GREY_700),
+        ], spacing=10),
+        padding=20,
+        bgcolor=SECONDARY_COLOR,
+        border_radius=10,
+        margin=10
+    )
+
     return ft.View(
         "/",
         controls=[
-            ft.Text("Welcome back! 👋", size=28, weight=ft.FontWeight.BOLD, color=FONT_COLOR),
-            ft.Text("How are you feeling today? Let's check in with yourself.", size=16, color=ft.Colors.GREY_700),
-            ft.Container(summary_row, margin=ft.Margin(0, 0, 0, 16)),
-            ft.Row([quick_mood_card, daily_reflection_card], spacing=16),
-        ],
-        padding=24,
-        spacing=24,
-        vertical_alignment=ft.MainAxisAlignment.START
-    )
-
-def mood_view(page):
-    mood_value = {"value": None}
-
-    def set_mood(mood):
-        def handler(e):
-            mood_value["value"] = mood
-            for btn in mood_buttons:
-                btn.bgcolor = ft.Colors.WHITE
-                btn.color = FONT_COLOR
-            mood_btn_map[mood].bgcolor = ACCENT
-            mood_btn_map[mood].color = ft.Colors.BLUE_900
-            page.update()
-        return handler
-
-    mood_btn_map = {}
-    mood_buttons = [
-        ft.ElevatedButton(
-            content=ft.Column([
-                ft.Text("😍", size=32),
-                ft.Text("Amazing", size=14, weight=ft.FontWeight.BOLD)
-            ], spacing=4, alignment=ft.MainAxisAlignment.CENTER),
-            bgcolor=ft.Colors.WHITE,
-            color=FONT_COLOR,
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)),
-            on_click=set_mood("Amazing"),
-            expand=1,
-            height=70
-        ),
-        ft.ElevatedButton(
-            content=ft.Column([
-                ft.Text("😊", size=32),
-                ft.Text("Good", size=14, weight=ft.FontWeight.BOLD)
-            ], spacing=4, alignment=ft.MainAxisAlignment.CENTER),
-            bgcolor=ft.Colors.WHITE,
-            color=FONT_COLOR,
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)),
-            on_click=set_mood("Good"),
-            expand=1,
-            height=70
-        ),
-        ft.ElevatedButton(
-            content=ft.Column([
-                ft.Text("😐", size=32),
-                ft.Text("Neutral", size=14, weight=ft.FontWeight.BOLD)
-            ], spacing=4, alignment=ft.MainAxisAlignment.CENTER),
-            bgcolor=ft.Colors.WHITE,
-            color=FONT_COLOR,
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)),
-            on_click=set_mood("Neutral"),
-            expand=1,
-            height=70
-        ),
-        ft.ElevatedButton(
-            content=ft.Column([
-                ft.Text("😔", size=32),
-                ft.Text("Low", size=14, weight=ft.FontWeight.BOLD)
-            ], spacing=4, alignment=ft.MainAxisAlignment.CENTER),
-            bgcolor=ft.Colors.WHITE,
-            color=FONT_COLOR,
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)),
-            on_click=set_mood("Low"),
-            expand=1,
-            height=70
-        ),
-        ft.ElevatedButton(
-            content=ft.Column([
-                ft.Text("😢", size=32),
-                ft.Text("Terrible", size=14, weight=ft.FontWeight.BOLD)
-            ], spacing=4, alignment=ft.MainAxisAlignment.CENTER),
-            bgcolor=ft.Colors.WHITE,
-            color=FONT_COLOR,
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)),
-            on_click=set_mood("Terrible"),
-            expand=1,
-            height=70
-        ),
-    ]
-    for btn in mood_buttons:
-        mood_btn_map[btn.content.controls[1].value] = btn
-
-    note_field = ft.TextField(
-        label="What's on your mind? How was your day?",
-        multiline=True,
-        height=80,
-        filled=True,
-        bgcolor=ft.Colors.WHITE,
-        border_radius=8
-    )
-
-    def save_mood(e):
-        if not mood_value["value"]:
-            page.snack_bar = ft.SnackBar(ft.Text("Please select your mood!"))
-            page.snack_bar.open = True
-            page.update()
-            return
-        httpx.post(f"{API_BASE}/mood", json={
-            "username": DEFAULT_USER,
-            "mood": mood_value["value"],
-            "tags": [],
-        })
-        # Optionally save note as journal
-        if note_field.value.strip():
-            httpx.post(f"{API_BASE}/journal", json={
-                "username": DEFAULT_USER,
-                "content": note_field.value.strip()
-            })
-        page.go("/")
-
-    tip_card = ft.Container(
-        ft.Column([
-            ft.Text("💡 Tip: Regular mood tracking helps you:", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
-            ft.Text(
-                "- Identify patterns in your emotional well-being\n"
-                "- Recognize triggers and positive influences\n"
-                "- Track your progress over time\n"
-                "- Better understand your mental health journey",
-                size=12,
-                color=ft.Colors.GREY_700
+            ft.Text("Welcome back!", size=24, weight=ft.FontWeight.BOLD),
+            ft.Text("How are you feeling today? Let's check in with yourself.", size=16),
+            ft.Row(
+                [mood_card, streak_card, journal_card],
+                alignment=ft.MainAxisAlignment.CENTER,
+                spacing=10,
+                wrap=True
             ),
-        ], spacing=4),
-        bgcolor=ft.Colors.WHITE,
-        border_radius=12,
-        padding=16,
-        margin=ft.Margin(0, 0, 0, 0),
-        shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.GREY_100)
+            latest_journal_card,
+            ft.Row(
+                [mood_check, daily_reflection],
+                alignment=ft.MainAxisAlignment.CENTER,
+                spacing=10
+            ),
+        ],
+        padding=20,
+        spacing=20,
+        bgcolor=BACKGROUND_COLOR
+    )
+
+def mood_view(page: ft.Page):
+    mood_dropdown = ft.Dropdown(
+        options=[
+            ft.dropdown.Option("😊 Happy"),
+            ft.dropdown.Option("😢 Sad"),
+            ft.dropdown.Option("😫 Stressed"),
+            ft.dropdown.Option("😌 Calm"),
+            ft.dropdown.Option("😐 Neutral"),
+            ft.dropdown.Option("😡 Angry"),
+            ft.dropdown.Option("😃 Excited"),
+            ft.dropdown.Option("😴 Tired"),
+        ],
+        label="How are you feeling?",
+        border_color=PRIMARY_COLOR,
+        filled=True,
+        expand=True
+    )
+
+    notes_field = ft.TextField(
+        label="Any notes? (optional)",
+        multiline=True,
+        min_lines=3,
+        max_lines=5,
+        border_color=PRIMARY_COLOR,
+        filled=True
+    )
+
+    def submit_mood(e):
+        if not mood_dropdown.value:
+            show_snackbar("Please select a mood", is_error=True)
+            return
+            
+        submit_button.disabled = True
+        submit_button.text = "Submitting..."
+        page.update()
+
+        try:
+            mood = mood_dropdown.value.split(" ")[1]  # Extract mood without emoji
+            notes = notes_field.value if notes_field.value else ""
+            
+            response = httpx.post(
+                f"{API_BASE}/mood",
+                json={
+                    "username": DEFAULT_USER,
+                    "mood": mood,
+                    "notes": notes
+                },
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                show_snackbar("Mood tracked successfully!", is_error=False)
+                page.go("/")
+            else:
+                show_snackbar(f"Error: {response.text}", is_error=True)
+                
+        except Exception as e:
+            show_snackbar(f"Error: {str(e)}", is_error=True)
+        finally:
+            submit_button.disabled = False
+            submit_button.text = "Submit"
+            page.update()
+
+    def show_snackbar(message: str, is_error: bool):
+        page.snack_bar = ft.SnackBar(
+            ft.Text(message),
+            bgcolor=ft.colors.RED_400 if is_error else ft.colors.GREEN_400
+        )
+        page.snack_bar.open = True
+        page.update()
+
+    submit_button = ft.FilledButton(
+        "Submit",
+        on_click=submit_mood,
+        width=200,
+        height=50
     )
 
     return ft.View(
         "/mood",
         controls=[
-            ft.Container(
-                ft.Column([
-                    ft.Icon(name=ft.icons.FAVORITE_BORDER, color=ft.Colors.BLUE_300, size=40),
-                    ft.Text("How are you feeling?", size=28, weight=ft.FontWeight.BOLD, color=FONT_COLOR, text_align=ft.TextAlign.CENTER),
-                    ft.Text("Take a moment to check in with yourself", size=16, color=ft.Colors.GREY_700, text_align=ft.TextAlign.CENTER),
-                    ft.Container(
-                        ft.Column([
-                            ft.Text("Select Your Mood", size=18, weight=ft.FontWeight.BOLD, color=FONT_COLOR),
-                            ft.Text("Choose the option that best describes how you're feeling right now", size=13, color=ft.Colors.GREY_600),
-                            ft.Row(mood_buttons, spacing=8),
-                            ft.Text("Add a note (optional)", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700, margin=ft.Margin(8,0,0,0)),
-                            note_field,
-                            ft.ElevatedButton(
-                                "Save Mood",
-                                on_click=save_mood,
-                                bgcolor=ACCENT,
-                                color=FONT_COLOR,
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)),
-                                expand=True,
-                                height=40
-                            ),
-                        ], spacing=10),
-                        bgcolor=ft.Colors.WHITE,
-                        border_radius=12,
-                        padding=20,
-                        shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.GREY_100)
-                    ),
-                    tip_card,
-                    ft.ElevatedButton("Back", on_click=lambda _: page.go("/"), bgcolor=ft.Colors.GREY_200, color=FONT_COLOR, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)), expand=True)
-                ], spacing=24),
-                alignment=ft.alignment.center,
-                padding=24,
-                expand=True
-            )
+            ft.AppBar(title=ft.Text("Track Your Mood"), bgcolor=PRIMARY_COLOR),
+            ft.Text("How are you feeling today?", size=20, weight=ft.FontWeight.BOLD),
+            mood_dropdown,
+            notes_field,
+            submit_button,
+            ft.TextButton("Back to Home", on_click=lambda _: page.go("/"))
         ],
-        padding=0,
-        spacing=0,
-        vertical_alignment=ft.MainAxisAlignment.START,
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER
+        padding=20,
+        spacing=20,
+        bgcolor=BACKGROUND_COLOR
     )
 
-def journal_view(page):
+def journal_view(page: ft.Page):
     journal_field = ft.TextField(
         label="Write your thoughts...",
         multiline=True,
-        height=200,
-        filled=True,
-        bgcolor=ACCENT,
-        border_radius=8
+        min_lines=10,
+        border_color=PRIMARY_COLOR,
+        filled=True
     )
 
     def save_journal(e):
-        httpx.post(f"{API_BASE}/journal", json={
-            "username": DEFAULT_USER,
-            "content": journal_field.value
-        })
-        page.go("/")
+        if not journal_field.value.strip():
+            show_snackbar("Please write something first", is_error=True)
+            return
+            
+        save_button.disabled = True
+        save_button.text = "Saving..."
+        page.update()
+
+        try:
+            response = httpx.post(
+                f"{API_BASE}/journal",
+                json={
+                    "username": DEFAULT_USER,
+                    "content": journal_field.value
+                },
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                show_snackbar("Journal saved!", is_error=False)
+                journal_field.value = ""  # Clear field after save
+                page.go("/")              # Go to home, which fetches latest journal
+            else:
+                show_snackbar(f"Error: {response.text}", is_error=True)
+                
+        except Exception as e:
+            show_snackbar(f"Error: {str(e)}", is_error=True)
+        finally:
+            save_button.disabled = False
+            save_button.text = "Save"
+            page.update()
+
+    def show_snackbar(message: str, is_error: bool):
+        page.snack_bar = ft.SnackBar(
+            ft.Text(message),
+            bgcolor=ft.colors.RED_400 if is_error else ft.colors.GREEN_400
+        )
+        page.snack_bar.open = True
+        page.update()
+
+    save_button = ft.FilledButton(
+        "Save Entry",
+        on_click=save_journal,
+        width=200,
+        height=50
+    )
 
     return ft.View(
         "/journal",
         controls=[
-            ft.Text("Journal Entry", size=24, weight=ft.FontWeight.BOLD, color=FONT_COLOR),
+            ft.AppBar(title=ft.Text("Daily Reflection"), bgcolor=PRIMARY_COLOR),
+            ft.Text("Take a moment to reflect on your day", size=20, weight=ft.FontWeight.BOLD),
             journal_field,
-            ft.ElevatedButton("Save", on_click=save_journal, bgcolor=ft.Colors.BLUE_300, color=ft.Colors.WHITE),
-            ft.ElevatedButton("Back", on_click=lambda _: page.go("/"), bgcolor=ft.Colors.GREY_200),
+            save_button,
+            ft.TextButton("Back to Home", on_click=lambda _: page.go("/"))
         ],
         padding=20,
         spacing=20,
-        vertical_alignment=ft.MainAxisAlignment.CENTER,
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER
+        bgcolor=BACKGROUND_COLOR
     )
 
 def main(page: ft.Page):
     page.title = "Mindful Balance"
-    page.window_width = 600
+    page.window_width = 400
     page.window_height = 700
     page.window_resizable = False
-    page.bgcolor = ft.Colors.WHITE
+    page.bgcolor = BACKGROUND_COLOR
+    page.fonts = {
+        "Roboto": "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+    }
+    page.theme = ft.Theme(font_family="Roboto")
 
     def route_change(e: ft.RouteChangeEvent):
         page.views.clear()
+        
         if page.route == "/":
-            page.views.append(dashboard_view(page))
+            page.views.append(home_view(page))
         elif page.route == "/mood":
             page.views.append(mood_view(page))
         elif page.route == "/journal":
             page.views.append(journal_view(page))
         else:
             page.go("/")
+            
         page.update()
 
     page.on_route_change = route_change
-    page.go(page.route)
+    page.go("/")
 
-ft.app(target=main)
+if __name__ == "__main__":
+    ft.app(target=main)
